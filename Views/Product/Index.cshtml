@@ -1,0 +1,248 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "~/Views/Shared/DashboardLayout.cshtml";
+}
+
+
+
+@model IEnumerable<Product>
+
+
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Quản lý sản phẩm</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <a asp-controller="Product" asp-action="Create" type="button" class="btn btn-primary">Create product</a>
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </section>
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+       
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class ="nav-link nav-category btn" aria-current="page" data-id="0">All</a>
+                </li>
+                @await Component.InvokeAsync("Category")
+
+            </ul>
+            <form class="d-flex" role="search">
+                <input class="form-control me-2" id="keyword" type="search" placeholder="Search" aria-label="Search">
+                <button id="btnSearch" class="btn  btn-outline-success" type="button">Search</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="card">
+            
+            <!-- /.card-header -->
+            <div class="card-body">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title text-center">Danh sách sản phẩm</h3>
+
+                      
+                    </div>
+
+                    <div id="wrap_product_content">
+                        <div class="card-body table-responsive p-0" id="wrap_table">
+                            <table class="table table-striped table-hover text-nowrap">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Category</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Image</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    @if (Model != null && Model.Any())
+                                    {
+                                        @foreach (Product s in Model)
+                                        {
+                                            <tr id="row-@s.ProductId">
+                                                <td>@s.ProductId</td>
+                                                <td>@s.title</td>
+                                                <td>@s.Category.CategoryName</td>
+                                                <td>@s.quantity</td>
+                                                <td>@s.price</td>
+                                                <td>
+
+                                                    <img style="width: 80px;  object-fit:cover" src=@s.images />
+                                                </td>
+                                                <td>
+                                                    <a asp-route-id="@s.ProductId" asp-controller="Product" asp-action="Edit" class="btn btn-success"><i class="fas fa-edit"></i></a>
+                                                    <a data-id="@s.ProductId" class="btnDelete btn btn-danger"><i class="far fa-trash-alt"></i></a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="7">Không có bản ghi nào</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            <div />
+
+                            <div class="card-fotter mt-4 ">
+                                <nav aria-label="Page navigation example navigation_bar" style="cursor: pointer">
+
+                                    @if (ViewBag.totalPage > 0)
+                                    {
+                                        <ul class="pagination justify-content-center">
+
+
+
+                                            @for (int p = 1; p <= ViewBag.totalPage; p++)
+                                            {
+                                                <li class="page-item   @(p == ViewBag.CurrentPage ? "active" : "")" data-page="@p"
+                                                @(ViewBag.categoryId != null ? "category = " + ViewBag.categoryId : " ")
+                                                @(ViewBag.keyword != null ? "keyword = " + ViewBag.keyword : " ")
+                                                >
+
+                                                    <a class="page-link" date-page="@p">@p</a>
+                                                </li>
+                                            }
+                                            <li class="page-item">
+
+
+                                        </ul>
+                                    }
+
+
+                                </nav>
+
+
+                            </div>
+
+                    </div>
+                    </div>
+
+                    <!-- /.card-header -->
+                   
+                <!-- /.card -->
+            </div>
+            </div>
+            <!-- /.card-body -->
+        </div>
+        <!-- /.card -->
+    </section>
+    <!-- /.content -->
+
+
+
+@section Scripts {
+    <script>
+       $(document).ready(function() {
+            $('body').on('click', '.btnDelete', function() {
+                const id = $(this).data("id")
+                var conf = confirm("Do you want delete this product ?")
+                if(conf === true) {
+                    $.ajax({
+                        url: '/Product/Delete',
+                        type: 'POST',
+                        data: {id: id},
+                        success: function(response) {
+                            if (response.success) {
+                                $('#row-' + id).remove();
+                            } 
+                        } ,
+                        error: function (e) {
+                            console.log(e);
+                        }
+                    })
+                }
+            })
+            //////
+
+           
+
+            // event clikck page
+
+            $('body').on('click', '.page-item', function () {
+                const element1 = $(this)
+                const element2 = $('.active');
+                element2.removeClass('active')
+                element1.addClass('active')
+                const page = element1.data("page")
+
+                var categoryId = $(this).attr('category');
+                var keyword = $(this).attr('keyword');
+
+                var data = { categoryId: categoryId, keyword: keyword, pageIndex: page };
+
+                  
+                $.ajax({
+                    url: "/Product/ProductFilter",
+                    method: "GET",
+                    data: data,
+                    success: function (data) {
+                        console.log(data)
+                        if (data != null) {
+                            $('#wrap_product_content').html(data)
+                        }
+                    },
+                    error: function (error) {
+                        console.log("Error: " + error);
+                    }
+            })
+                    
+                })
+
+
+
+            $(".nav-category").click(function (e) {
+                const id = $(this).data("id")
+                var data = { categoryId: id };
+
+                $.ajax({
+                    url: "/Product/ProductFilter",
+                    data: data,
+                    success: function (response) {
+                        $("#wrap_product_content").html(response);
+                    }
+                });
+            });
+
+
+            $("button#btnSearch").click(function (e) {
+                var keyword = $("#keyword").val();
+                var data = { keyword: keyword };
+
+                $.ajax({
+                    url: "/Product/ProductFilter",
+                    data: data,
+                    success: function (response) {
+                        $("#wrap_product_content").html(response);
+                    }
+                });
+            });
+       })
+    </script>
+
+    <script src="~/plugins/jsgrid/demos/db.js"></script>
+    <script src="~/plugins/jsgrid/jsgrid.min.js"></script>
+ }
+
